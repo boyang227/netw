@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 //#include "netw.h"
-#include <time.h>
 
 char usage[] = "usage: %s -ltu -i ip -p port\n";
 
@@ -56,6 +55,12 @@ void createTcpServer(char *ipaddr, int port) {
 
 	//sockopt
 	//int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+	int rc = setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+	if (-1 == rc) {
+		perror("setsockopt");
+		return;
+	}
+
 
 	//bind
 	//int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
@@ -79,13 +84,9 @@ void createTcpServer(char *ipaddr, int port) {
 	char input[80];
 
 	recv(nsock , input, sizeof(input), 0);
-	printf("%d recv:%s\n", time(0), input);
+	printf("recv:%s\n", input);
 
 	send(nsock , input, sizeof(input) , 0);
-
-    sleep(5);
-    close(nsock);
-	printf("%d closed\n", time(0));
 }
 
 void createUdpClient(char *ipaddr, int port) {
@@ -150,13 +151,10 @@ void createUdpServer(char *ipaddr, int port) {
 	sendto(sfd , input, sizeof(input), MSG_CONFIRM, (struct sockaddr *)&caddr, caddl);
 }
 
-void createUdpBroadcastClient(char *ipaddr, int port) {
-}
-
 int main (int argc, char **argv)
 {
     typedef enum {CLIENT, SERVER} Mode;
-    typedef enum {TCP, UDP, UDPBROADCAST} Type;
+    typedef enum {TCP, UDP} Type;
 
     Mode mode = CLIENT; //default mode is CLIENT
     Type type = TCP;    //default type is TCP
@@ -164,7 +162,7 @@ int main (int argc, char **argv)
     int port = 0;
     int c;
 
-    while ((c = getopt (argc, argv, "ltubi:p:")) != -1)
+    while ((c = getopt (argc, argv, "ltui:p:")) != -1)
         switch (c)
         {
             case 'l':
@@ -175,9 +173,6 @@ int main (int argc, char **argv)
                 break;
             case 'u':
                 type = UDP;
-                break;
-            case 'b':
-                type = UDPBROADCAST;
                 break;
             case 'i':
                 ipaddr = optarg;
@@ -203,8 +198,6 @@ int main (int argc, char **argv)
         createUdpClient(ipaddr, port);
     else if (SERVER == mode && UDP == type)
         createUdpServer(ipaddr, port);
-    else if (CLIENT == mode && UDPBROADCAST == type)
-        createUdpBroadcastClient(ipaddr, port);
     else {
         printf(usage, argv[0]);
         exit(-1);
