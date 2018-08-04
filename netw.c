@@ -2,14 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>          /* See NOTES */
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 //#include "netw.h"
 #include <time.h>
 
-char usage[] = "usage: %s -ltu -i ip -p port\n";
+char usage[] = "usage: %s -ltub -i ip -p port\n";
 
 void createTcpClient(char *ipaddr, int port) {
     printf("tcp client to %s:%d\n", ipaddr, port);
@@ -151,6 +151,20 @@ void createUdpServer(char *ipaddr, int port) {
 }
 
 void createUdpBroadcastClient(char *ipaddr, int port) {
+    printf("udp broadcast client to %s:%d\n", ipaddr, port);
+
+	int bsockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    int broadcastEnable=1;
+    int ret=setsockopt(bsockfd, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable));
+
+	struct sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	inet_pton(AF_INET, ipaddr, &addr.sin_addr);
+
+	char hi[] = "hello world!";
+	sendto(bsockfd, hi, sizeof(hi), 0, (struct sockaddr *)&addr, sizeof(addr));
 }
 
 int main (int argc, char **argv)
